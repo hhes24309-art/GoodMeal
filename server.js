@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 초기 화면에 1학년 1반부터 7반까지 기본으로 등록해 둡니다.
+// 초기 데이터 세팅
 let mealStatusData = {
     "1-1": { grade: 1, class: 1, status: "교실 대기 중" },
     "1-2": { grade: 1, class: 2, status: "교실 대기 중" },
@@ -29,9 +29,8 @@ let mealStatusData = {
     "1-7": { grade: 1, class: 7, status: "교실 대기 중" }
 };
 
-// 매일 자정(00:00)에 모든 학반의 상태를 '교실 대기 중'으로 초기화
+// 매일 자정(00:00) 초기화
 schedule.scheduleJob('0 0 * * *', () => {
-    console.log('자정이 되어 급식 현황을 초기화합니다.');
     for (const id in mealStatusData) {
         mealStatusData[id].status = "교실 대기 중";
     }
@@ -39,8 +38,15 @@ schedule.scheduleJob('0 0 * * *', () => {
 });
 
 io.on('connection', (socket) => {
-    console.log('새로운 사용자가 접속했습니다. 익명 ID:', socket.id);
+    console.log('사용자 접속:', socket.id);
+    
+    // 접속하자마자 현재 저장된 데이터를 즉시 전송
     socket.emit('initial_data', mealStatusData);
+
+    // 혹시 모를 타이밍 이슈 방지를 위해 요청 시 재전송하는 이벤트 추가
+    socket.on('request_initial_data', () => {
+        socket.emit('initial_data', mealStatusData);
+    });
 
     socket.on('add_class', (data) => {
         const { grade, className } = data;
@@ -63,12 +69,8 @@ io.on('connection', (socket) => {
             io.emit('status_updated', { id, status });
         }
     });
-
-    socket.on('disconnect', () => {
-        console.log('사용자가 접속을 종료했습니다.');
-    });
 });
 
 server.listen(PORT, () => {
-    console.log(`서버가 포트 ${PORT} 에서 원활히 구동 중입니다.`);
+    console.log(`서버가 포트 ${PORT} 에서 구동 중입니다.`);
 });
