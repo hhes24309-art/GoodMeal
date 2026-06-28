@@ -20,20 +20,20 @@
             margin-bottom: 10px;
         }
         
-        /* 귀여운 아이들 이미지 애니메이션 영역 */
+        /* 외부 차단 없는 고화질 이모지 일러스트 영역 */
         .character-container {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 30px;
             margin: 20px 0;
         }
         .child-img {
-            width: 110px; /* 이미지 크기 적절하게 조절 */
-            height: auto;
+            width: 90px;
+            height: 90px;
             animation: nodHead 2s ease-in-out infinite alternate;
         }
         .child-img:nth-child(2) {
-            animation-delay: 0.5s; /* 엇박자로 움직이도록 설정 */
+            animation-delay: 0.5s;
         }
         @keyframes nodHead {
             0% { transform: rotate(-8deg); }
@@ -108,8 +108,8 @@
     <h1>맛있는 급식</h1>
 
     <div class="character-container">
-        <img class="child-img" src="https://images.crowdpic.net/detail-thumb/thumb_d_265FB4EA534005DFE922CD004240375E.png" alt="식판 든 남자아이">
-        <img class="child-img" src="https://images.crowdpic.net/detail-thumb/thumb_d_8670A88FFBE8B1D45D5D1875A67D25DA.png" alt="식판 든 여자아이">
+        <img class="child-img" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f466_1f3fb/512.webp" alt="소년">
+        <img class="child-img" src="https://fonts.gstatic.com/s/e/notoemoji/latest/1f467_1f3fb/512.webp" alt="소녀">
     </div>
 
     <div class="admin-box">
@@ -127,3 +127,73 @@
                 </tr>
             </thead>
             <tbody id="statusTableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <script>
+        const socket = io(window.location.origin, {
+            transports: ['websocket', 'polling']
+        });
+        
+        const statuses = ["교실 대기 중", "줄서는 중", "식사 중", "식사 완료"];
+
+        // 소켓이 연결 성공하면 확실하게 데이터를 달라고 서버에 한 번 더 요청합니다.
+        socket.on('connect', () => {
+            console.log('서버 연결 성공!');
+            socket.emit('request_initial_data');
+        });
+
+        function addClass() {
+            const grade = document.getElementById('gradeInput').value;
+            const className = document.getElementById('classInput').value;
+            if(!grade || !className) return alert('학년과 반을 입력해주세요.');
+            
+            socket.emit('add_class', { grade, className });
+            document.getElementById('gradeInput').value = '';
+            document.getElementById('classInput').value = '';
+        }
+
+        function changeStatus(id, status) {
+            socket.emit('change_status', { id, status });
+        }
+
+        socket.on('initial_data', (data) => {
+            const tbody = document.getElementById('statusTableBody');
+            tbody.innerHTML = '';
+
+            const sortedKeys = Object.keys(data).sort((a, b) => {
+                return data[a].grade - data[b].grade || data[a].class - data[b].class;
+            });
+
+            sortedKeys.forEach(id => {
+                const item = data[id];
+                const tr = document.createElement('tr');
+                
+                let buttonsHtml = statuses.map(st => {
+                    const activeClass = item.status === st ? 'active' : '';
+                    return `<button class="status-btn ${activeClass}" data-status="${st}" onclick="changeStatus('${id}', '${st}')">${st}</button>`;
+                }).join('');
+
+                tr.innerHTML = `
+                    <td><strong>${item.grade}학년 ${item.class}반</strong></td>
+                    <td>${buttonsHtml}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+
+        socket.on('status_updated', (data) => {
+            const { id, status } = data;
+            const buttons = document.querySelectorAll(`button[onclick^="changeStatus('${id}'"]`);
+            buttons.forEach(btn => {
+                if(btn.getAttribute('data-status') === status) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
