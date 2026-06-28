@@ -167,7 +167,10 @@
     </div>
 
     <script>
-        const socket = io();
+        // 접속한 도메인 주소를 자동으로 인식하여 실시간 소켓을 연결합니다.
+        const socket = io(window.location.origin, {
+            transports: ['websocket', 'polling'] // 연결 안정성 확보
+        });
         const statuses = ["교실 대기 중", "줄서는 중", "식사 중", "식사 완료"];
 
         // 학반 추가 함수
