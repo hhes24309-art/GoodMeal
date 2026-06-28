@@ -1,0 +1,14 @@
+{
+  "name": "good-meal",
+  "version": "1.0.0",
+  "description": "초등학교 급식 순서 실시간 관리 프로그램",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "node-schedule": "^2.1.1",
+    "socket.io": "^4.7.5"
+  }
+}
